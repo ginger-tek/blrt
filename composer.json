@@ -6,6 +6,11 @@
             "App\\": "src/"
         }
     },
+    "scripts": {
+        "post-install-cmd": [
+            "php -r \"!is_file('.env') && file_put_contents('.env', 'JWT_SECRET=\\'' . bin2hex(random_bytes(32)) . '\\'');\""
+        ]
+    },
     "require": {
         "ginger-tek/routy": "^4.4",
         "firebase/php-jwt": "^7.0",
