@@ -1,0 +1,16 @@
+{
+  "name": "Blrt",
+  "short_name": "Blrt",
+  "description": "Just say what you need to say",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#131720",
+  "theme_color": "#5f3a5f",
+  "icons": [
+    {
+      "src": "https://unpkg.com/bootstrap-icons@1.13.1/icons/chat-quote-fill.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
