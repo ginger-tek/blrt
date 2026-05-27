@@ -1,17 +1,24 @@
 <?php
 
-namespace App;
+namespace App\Controllers;
 
 use GingerTek\Routy;
+use App\Services\TokenService;
+use App\Services\UserDataService;
 
 class AuthController
 {
+  public static function getSession(Routy $app)
+  {
+    $app->sendJson($app->getCtx('session') ?: new \stdClass);
+  }
+
   public static function submitSignup(Routy $app)
   {
     $body = $app->getBody();
     if (!$body || !isset($body->username, $body->password, $body->display_name))
       return $app->status(400)->sendJson(['error' => 'Missing required values']);
-    $svc = new \App\UserData;
+    $svc = new UserDataService;
     if ($svc->find($body->username))
       return $app->status(409)->sendJson(['error' => 'Username already exists']);
     $user = $svc->create([
@@ -29,10 +36,10 @@ class AuthController
     $body = $app->getBody();
     if (!$body || !isset($body->username, $body->password))
       return $app->status(400)->sendJson(['error' => 'Missing required values']);
-    $user = (new \App\UserData)->find($body->username);
+    $user = (new UserDataService)->find($body->username);
     if (!$user || !password_verify($body->password, $user->passhash))
       return $app->status(401)->sendJson(['error' => 'Invalid username or password']);
-    [$token, $exp] = \App\TokenService::sign([
+    [$token, $exp] = TokenService::sign([
       'sub' => $user->id,
       'preferred_username' => $user->username,
       'name' => $user->display_name

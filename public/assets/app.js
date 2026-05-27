@@ -2,7 +2,7 @@ const state = Vue.reactive({
   session: {}
 })
 const api = async (u, m = 'GET', b = null, s = null) => {
-  const r = await fetch(`/api${u}`, {
+  const r = await fetch(`/api/${u}`, {
     method: m,
     headers: { 'content-type': 'application/json' },
     body: b ? JSON.stringify(b) : undefined,
@@ -49,7 +49,7 @@ const SignupView = {
       try {
         error.value = null
         submitting.value = true
-        await api('/auth/signup', 'POST', body)
+        await api('signup', 'POST', body)
         router.replace('/login')
       } catch (ex) {
         console.error(ex)
@@ -82,9 +82,9 @@ const LoginView = {
       try {
         error.value = null
         submitting.value = true
-        const res = await api('/auth/login', 'POST', body)
+        const res = await api('login', 'POST', body)
         if (res.token) {
-          state.session = await api('/auth/session')
+          state.session = await api('session')
           if (state.session.sub)
             router.replace('/feed')
         }
@@ -117,7 +117,7 @@ const FeedView = {
 
     async function loadPosts() {
       try {
-        const { items } = await api('/feed')
+        const { items } = await api('feed')
         posts.value = items
       } catch (ex) {
         console.error(ex)
@@ -145,7 +145,7 @@ const PostView = {
     async function loadPost() {
       try {
         loading.value = true
-        post.value = await api(`/posts/${route.params.id}`)
+        post.value = await api(`posts/${route.params.id}`)
       } catch (ex) {
         console.error(ex)
       } finally {
@@ -200,7 +200,7 @@ const SearchView = {
         try {
           results.value = {}
           querying.value = true
-          results.value = await api('/search', 'POST', { query }, abortCtrl.signal)
+          results.value = await api('search', 'POST', { query }, abortCtrl.signal)
           router.push({ hash: `#${query}` })
         } catch (ex) {
           if (ex.name === 'AbortError') {
@@ -245,7 +245,7 @@ const CreateView = {
         if (!post.body) return
         error.value = null
         submitting.value = true
-        const res = await api('/posts', 'POST', post)
+        const res = await api('posts', 'POST', post)
         if (res.id)
           router.replace(`/posts/${res.id}`)
       } catch (ex) {
@@ -289,9 +289,9 @@ const ProfileView = {
     Vue.onMounted(async () => {
       try {
         if (route.params.username)
-          user.value = await api(`/users/@${route.params.username}`)
+          user.value = await api(`users/@${route.params.username}`)
         else
-          user.value = await api(`/profile`)
+          user.value = await api(`profile`)
         posts.value = user.value.posts.top
       } catch (ex) {
         console.error(ex)
@@ -339,7 +339,7 @@ const SettingsView = {
 
     async function loadInterests() {
       loading.value = true
-      interests.value = await api('/profile/interests')
+      interests.value = await api('profile/interests')
       loading.value = false
     }
 
@@ -358,7 +358,7 @@ const SettingsView = {
         error.value = null
         if (interests.value == 0) return
         submitting.value = true
-        await api('/profile/interests', 'PUT', {
+        await api('profile/interests', 'PUT', {
           interests: interests.value,
           removed: removedInterests.value
         })
@@ -373,7 +373,7 @@ const SettingsView = {
     async function submitLogout() {
       try {
         submitting.value = true
-        await api('/auth/logout', 'POST')
+        await api('logout', 'POST')
         state.session = {}
         router.replace('/login')
       } catch (ex) {
@@ -420,7 +420,7 @@ const router = VueRouter.createRouter({
 
 const hasCookie = await cookieStore.get('exp')
 if (hasCookie?.value)
-  state.session = await api('/auth/session').catch(() => ({}))
+  state.session = await api('session').catch(() => ({}))
 
 router.beforeEach((to) => {
   if (!state.session.sub && to.meta.auth)

@@ -1,10 +1,10 @@
 <?php
 
-namespace App;
+namespace App\Services;
 
 use Ramsey\Uuid\Uuid;
 
-class PostData
+class PostDataService
 {
   private Db $db;
 

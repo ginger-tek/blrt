@@ -1,8 +1,8 @@
 <?php
 
-namespace App;
+namespace App\Services;
 
-class SearchData
+class SearchDataService
 {
   private Db $db;
 
