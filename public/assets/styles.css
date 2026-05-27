@@ -1,20 +1,59 @@
 @import url('https://fonts.googleapis.com/css2?family=DynaPuff:wght@400..700&display=swap');
 
 :root {
-  --color: hsl(300, 24%, 50%);
-  --color-hover: hsl(300, 24%, 60%);
-  --color-darker: hsl(300, 24%, 25%);
-  --color-lighter: hsl(300, 24%, 90%);
-  --color-shadow: hsl(300, 24%, 15%);
+  --bg: hsl(300, 24%, 90%);
+  --text: hsl(300, 24%, 25%);
+  --shadow: hsl(300, 24%, 75%);
+  --header: hsl(300, 24%, 30%);
+  --btn-text: hsl(300, 24%, 95%);
+  --btn-bg: hsl(300, 24%, 40%);
+  --btn-hover: hsl(300, 24%, 50%);
+  --btn-shadow: hsl(300, 24%, 25%);
+  --input-bg: hsl(300, 24%, 75%);
+  --input-text: hsl(300, 24%, 25%);
+  --input-border: hsl(300, 24%, 20%);
+  --input-placeholder: hsl(300, 24%, 20%);
+  --link-text: hsl(300, 24%, 30%);
+  --link-shadow: hsl(300, 24%, 75%);
+  --card-bg: hsl(300, 24%, 75%);
+  --card-text: hsl(300, 24%, 25%);
+  --card-border: hsl(300, 24%, 25%);
+
   --danger: hsl(0, 55%, 34%);
+  --danger-border: hsl(0, 55%, 80%);
+  --danger-text: hsl(0, 55%, 90%);
   --danger-hover: hsl(0, 55%, 40%);
-  --danger-darker: hsl(0, 55%, 25%);
-  --danger-lighter: hsl(0, 55%, 90%);
+  --danger-active: hsl(0, 55%, 25%);
   --danger-shadow: hsl(0, 55%, 20%);
-  --info: hsl(44, 88%, 60%);
-  --info-hover: hsl(44, 88%, 53%);
-  --text: hsl(300, 34%, 95%);
-  --bg: hsl(250, 5%, 22%);
+  --card-bg-danger: hsl(0, 55%, 45%);
+
+  --warn: hsl(44, 88%, 60%);
+  --warn-border: hsl(44, 88%, 25%);
+  --warn-text: hsl(44, 88%, 15%);
+  --warn-hover: hsl(44, 88%, 53%);
+  --warn-active: hsl(44, 88%, 25%);
+  --warn-shadow: hsl(44, 88%, 20%);
+  --card-warn-danger: hsl(44, 88%, 65%);
+
+  @media (prefers-color-scheme: dark) {
+    --bg: hsl(200, 24%, 15%);
+    --text: hsl(300, 24%, 85%);
+    --shadow: hsl(300, 24%, 35%);
+    --header: hsl(300, 24%, 75%);
+    --btn-text: hsl(300, 24%, 15%);
+    --btn-bg: hsl(300, 24%, 50%);
+    --btn-hover: hsl(300, 24%, 55%);
+    --btn-shadow: hsl(300, 24%, 30%);
+    --input-bg: hsl(300, 24%, 10%);
+    --input-text: hsl(300, 24%, 80%);
+    --input-border: hsl(300, 24%, 75%);
+    --input-placeholder: hsl(300, 24%, 75%);
+    --link-text: hsl(300, 24%, 75%);
+    --link-shadow: hsl(300, 24%, 10%);
+    --card-border: hsl(300, 24%, 60%);
+    --card-text: hsl(300, 24%, 85%);
+    --card-bg: hsl(300, 24%, 25%);
+  }
 }
 
 body {
@@ -28,16 +67,20 @@ body {
 
 .container {
   margin-inline: auto;
-  max-inline-size: 470px;
+  max-inline-size: 512px;
   padding: .5em;
+
+  &.narrow {
+    max-inline-size: 320px;
+  }
 }
 
 h1,
 h2,
 h3,
 h4 {
-  color: var(--color);
-  text-shadow: 3px 3px var(--color-shadow);
+  color: var(--header);
+  text-shadow: 3px 3px var(--text-shadow);
   margin: .25em auto;
 }
 
@@ -66,6 +109,7 @@ h4 {
 }
 
 p {
+  color: var(--text);
   font-weight: normal;
   font-size: 1.125em;
   white-space: pre-wrap;
@@ -80,30 +124,34 @@ pre {
 }
 
 header {
+  margin-top: .5em;
   margin-bottom: 1em;
 }
 
 nav a {
   display: inline-block;
-  color: var(--color);
+  color: var(--link-text);
   text-decoration: none;
+  text-shadow: 2px 2px var(--link-shadow);
   padding: .5em .75em;
 
   &:not(.router-link-active):hover {
-    border-radius: 5px;
-    background: var(--color-shadow);
+    border-radius: 8px;
+    background: var(--card-bg);
   }
 
   &.router-link-active {
-    text-shadow: 2px 2px var(--color-shadow);
     transform: scale(1.2);
+    padding: .5em;
+    border-radius: 10px;
+    background: var(--card-bg);
   }
 }
 
 main a:not([role=button]) {
-  color: var(--color-lighter);
+  color: var(--link-text);
   text-decoration: none;
-  text-shadow: 2px 2px var(--color-shadow);
+  text-shadow: 2px 2px var(--link-shadow);
 
   &:hover {
     text-decoration: underline;
@@ -122,31 +170,48 @@ a[role=button] {
   margin-bottom: 1em;
 }
 
-section {
-  border: 1px solid var(--color-shadow);
+article {
+  border: 1px solid var(--card-border);
   border-radius: .5em;
-  background: var(--color-darker);
+  background: var(--card-bg);
+  color: var(--card-text);
   padding: .5em;
 
   &.list-item {
     margin-bottom: .5em;
 
     &:hover {
-      position: relative;
-      box-shadow: 1px 4px 0 0 var(--color-shadow);
-      left: -1px;
-      top: -4px;
+      transform: scale(1.025);
     }
   }
 
   &.danger {
-    background: var(--danger);
-    color: var(--danger-lighter);
+    border: 1px solid var(--danger-border);
+    background: var(--card-bg-danger);
+    color: var(--danger-text);
+
+    :is(h1, h2, h3, h4, p) {
+      color: inherit;
+    }
 
     :is(h1, h2, h3, h4) {
-      color: inherit;
       margin-top: 0;
       text-shadow: 3px 3px var(--danger-shadow);
+    }
+  }
+
+  &.warn {
+    border: 1px solid var(--warn-border);
+    background: var(--card-bg-warn);
+    color: var(--warn-text);
+
+    :is(h1, h2, h3, h4, p) {
+      color: inherit;
+    }
+
+    :is(h1, h2, h3, h4) {
+      margin-top: 0;
+      text-shadow: 3px 3px var(--warn-shadow);
     }
   }
 }
@@ -155,8 +220,8 @@ hr {
   display: block;
   height: 2px;
   margin: 1em auto;
-  background: var(--color);
-  box-shadow: 2px 2px 0 0 var(--color-shadow);
+  background: var(--text);
+  box-shadow: 2px 2px 0 0 var(--text-shadow);
   border: none;
 }
 
@@ -164,6 +229,10 @@ hr {
   display: flex;
   gap: .5em;
   align-items: center;
+
+  &.center {
+    justify-content: center;
+  }
 
   &.spread {
     justify-content: space-between;
@@ -179,9 +248,9 @@ hr {
   padding: .5em;
   font-family: inherit;
   font-size: inherit;
-  border: 2px solid var(--color-shadow);
   border-radius: .5em;
-  margin: .25em 0;
+  margin-top: .25em;
+  margin-bottom: .5em;
 
   &.inline {
     display: inline-block;
@@ -194,50 +263,51 @@ hr {
 }
 
 :is(input:not([type=checkbox], [type=radio]), select, textarea) {
-  background: var(--color-darker);
-  color: var(--text);
+  background: var(--input-bg);
+  color: var(--input-text);
+  border: 1px solid var(--input-border);
 
   &::placeholder {
-    color: var(--color);
+    color: var(--input-placeholder);
   }
 
   &:focus {
-    outline: 1px solid var(--color-hover);
+    outline: 2px solid var(--input-border);
   }
 }
 
 :is(button, [role=button]) {
   cursor: pointer;
-  background: var(--color);
-  color: var(--color-shadow);
+  background: var(--btn-bg);
+  color: var(--btn-text);
   min-width: 100px;
   position: relative;
   white-space: nowrap;
-  margin-top: .5em !important;
+  border: none;
 
   &[disabled] {
     opacity: .5;
   }
 
   &:not(:active, [disabled]) {
-    box-shadow: 1px 4px 0 0 var(--color-shadow);
+    box-shadow: 1px 4px 0 0 var(--btn-shadow);
     left: -1px;
     top: -4px;
   }
 
   &:hover {
-    background: var(--color-hover);
+    background: var(--btn-hover);
   }
 
   &:not([disabled]):active {
-    box-shadow: 0 0 0 0 var(--color-shadow);
+    box-shadow: 0 0 0 0 var(--btn-shadow);
     left: 0;
     top: 0;
   }
 
   &.danger {
-    background: var(--danger-darker);
-    color: var(--danger-lighter);
+    background: var(--danger);
+    color: var(--danger-text);
     border: 2px solid var(--danger-shadow);
 
     &:not(:active, [disabled]) {
@@ -252,6 +322,28 @@ hr {
 
     &:not([disabled]):active {
       box-shadow: 0 0 0 0 var(--danger-shadow);
+      left: 0;
+      top: 0;
+    }
+  }
+
+  &.warn {
+    background: var(--warn);
+    color: var(--warn-text);
+    border: 2px solid var(--warn-shadow);
+
+    &:not(:active, [disabled]) {
+      box-shadow: 1px 4px 0 0 var(--warn-shadow);
+      left: -1px;
+      top: -4px;
+    }
+
+    &:hover {
+      background: var(--warn-hover);
+    }
+
+    &:not([disabled]):active {
+      box-shadow: 0 0 0 0 var(--warn-shadow);
       left: 0;
       top: 0;
     }
@@ -295,15 +387,15 @@ hr {
   >.tag {
     display: inline-block;
     padding: .5em;
-    background: var(--color-darker);
+    background: var(--btn-bg);
     border-radius: 10px;
-    box-shadow: 3px 3px 0 0 var(--color-shadow);
+    box-shadow: 3px 3px 0 0 var(--btn-shadow);
     margin-bottom: .5em;
 
     >span[aria-label=Remove] {
       cursor: pointer;
       padding: .25em .5em;
-      background: var(--color-shadow);
+      background: var(--btn-shadow);
       line-height: 1em;
       display: inline-block;
       vertical-align: middle;
@@ -324,7 +416,7 @@ hr {
   &:after {
     display: block;
     content: '';
-    background-color: var(--color);
+    background-color: var(--text);
     animation: shift .5s linear infinite;
     mask: url("data:image/svg+xml;charset=utf8,%3Csvg id='squiggle-link' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xmlns:ev='http://www.w3.org/2001/xml-events' viewBox='0 0 20 4'%3E %3Cpath fill='none' stroke='currentColor' stroke-width='2' class='squiggle' d='M0,3.5 c 5,0,5,-3,10,-3 s 5,3,10,3 c 5,0,5,-3,10,-3 s 5,3,10,3'/%3E%3C/svg%3E");
     margin-right: -27px;

@@ -29,7 +29,7 @@ const PostDetails = {
 
 const SignupView = {
   template: `<h1 class="text-center">Signup</h1>
-  <form @submit.prevent="submitSignup">
+  <form @submit.prevent="submitSignup" class="container narrow">
     <div :class="['text-center',{squiggle:submitting}]">{{ error }}</div>
     <input id="username" v-model="body.username" autocapitalize="off" placeholder="Username" class="fill" required>
     <input id="display_name" v-model="body.display_name" placeholder="Display Name" class="fill" required>
@@ -64,7 +64,7 @@ const SignupView = {
 
 const LoginView = {
   template: `<h1 class="text-center">Login</h1>
-  <form @submit.prevent="submitLogin">
+  <form @submit.prevent="submitLogin" class="container narrow">
     <div :class="['text-center',{squiggle:submitting}]">{{ error }}</div>
     <input id="username" v-model="body.username" autocapitalize="off" placeholder="Username" class="fill" required>
     <input id="password" v-model="body.password" type="password" placeholder="Password" class="fill" required>
@@ -107,9 +107,9 @@ const FeedView = {
       <p>Looks like there's nothing here yet. Otherwise, you can try adjusting your interests</p>
       <router-link role="button" class="inline" to="/settings">Settings</router-link>
     </div>
-    <section v-for="post in posts" class="list-item">
+    <article v-for="post in posts" class="list-item">
       <post-details :data="post" :has-link="true" size="sm"></post-details>
-    </section>`,
+    </article>`,
   setup() {
     const error = Vue.ref(null)
     const loading = Vue.ref(true)
@@ -167,12 +167,12 @@ const SearchView = {
     <h3 class="text-center">{{ results.total || 'No' }} Results</h3>
     <div v-if="results.total > 0">
       <h4>Posts</h4>
-      <section v-for="post in results.posts" class="list-item">
+      <article v-for="post in results.posts" class="list-item">
         <post-details :data="post" :has-link="true" size="sm"></post-details>
       </section>
       <hr>
       <h4>Users</h4>
-      <section v-for="user in results.users" class="list-item">
+      <article v-for="user in results.users" class="list-item">
         <img v-if="user.pfp" :src="user.pfp"> <router-link :to="'/@' + user.username">{{ user.display_name }} <small>(@{{ user.username }})</small></router-link>
       </section>
     </div>
@@ -275,9 +275,9 @@ const ProfileView = {
       <button type="button" @click="posts = user.posts.top">Top</button>
       <button type="button" @click="posts = user.posts.recent">Recent</button>
     </div>
-    <section v-for="post in posts" class="list-item">
+    <article v-for="post in posts" class="list-item">
       <post-details :data="post" :has-link="true" size="sm"></post-details>
-    </section>
+    </article>
   </div>`,
   setup() {
     const error = Vue.ref(null)
@@ -325,11 +325,11 @@ const SettingsView = {
   <hr>
   <h3>Account</h3>
   <button type="button" @click="submitLogout" :disabled="submitting" class="fill">Logout</button>
-  <section class="danger top-spacing">
+  <article class="danger top-spacing">
     <h4>Danger Zone!</h4>
     <p>Actions done in this area are irreversable. Take caution!</p>
     <button type="button" @click="submitDelete" :disabled="submitting" class="fill danger">Delete Account</button>
-  </section>`,
+  </article>`,
   setup() {
     const error = Vue.ref(null)
     const loading = Vue.ref(true)
@@ -436,7 +436,7 @@ Vue.createApp({
       <router-link to="/profile">Profile</router-link>
       <router-link to="/settings">Settings</router-link>
     </nav>
-    <nav v-else>
+    <nav v-else class="flex center">
       <router-link to="/login">Login</router-link>
       <router-link to="/signup">Signup</router-link>
     </nav>
