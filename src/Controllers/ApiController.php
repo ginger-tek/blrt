@@ -9,17 +9,6 @@ use App\Services\PostDataService;
 
 class ApiController
 {
-  public static function listFeed(Routy $app)
-  {
-    $posts = (new PostDataService)->feed($app->getCtx('user')->id);
-    $app->sendJson(['count' => count($posts), 'items' => $posts]);
-  }
-
-  public static function getPost(Routy $app)
-  {
-    $app->sendJson((new PostDataService)->get($app->getParam('id')));
-  }
-
   public static function submitCreatePost(Routy $app)
   {
     $body = $app->getBody();
@@ -29,6 +18,54 @@ class ApiController
       'author_id' => $app->getCtx('user')->id,
       'body' => $body->body
     ]));
+  }
+
+  public static function listFeed(Routy $app)
+  {
+    $posts = (new PostDataService)->feed($app->getCtx('user')->id);
+    $app->sendJson(['count' => count($posts), 'items' => $posts]);
+  }
+
+  public static function getPost(Routy $app)
+  {
+    $post = (new PostDataService)->get($app->getParam('id'));
+    if (!$post)
+      return $app->status(404)->sendJson(['error' => 'Post not found']);
+    $app->sendJson($post);
+  }
+
+  public static function getPostComments(Routy $app)
+  {
+    $post = (new PostDataService)->get($app->getParam('id'));
+    if (!$post)
+      return $app->status(404)->sendJson(['error' => 'Post not found']);
+    $app->sendJson((new PostDataService)->listComments($post->id));
+  }
+
+  public static function submitPostComment(Routy $app)
+  {
+    $body = $app->getBody();
+    if (!$body || !isset($body->body) || !is_string($body->body))
+      return $app->status(400)->sendJson(['error' => 'Missing required values']);
+    $post = (new PostDataService)->get($app->getParam('id'));
+    if (!$post)
+      return $app->status(404)->sendJson(['error' => 'Post not found']);
+    $app->sendJson((new PostDataService)->createComment([
+      'post_id' => $post->id,
+      'author_id' => $app->getCtx('user')->id,
+      'body' => $body->body
+    ]));
+  }
+
+  public static function deletePost(Routy $app)
+  {
+    $post = (new PostDataService)->get($app->getParam('id'));
+    if (!$post)
+      return $app->status(404)->sendJson(['error' => 'Post not found']);
+    if ($app->getCtx('user')->id != $post->author_id)
+      return $app->status(403)->sendJson(['error' => 'Insufficent permissions']);
+    $result = (new PostDataService)->deletePost($post->id, $app->getCtx('user')->id);
+    $app->sendJson(['result' => $result]);
   }
 
   public static function submitSearch(Routy $app)
@@ -55,7 +92,7 @@ class ApiController
   public static function putProfileInterests(Routy $app)
   {
     $body = $app->getBody();
-    if (!$body || !isset($body->interests) || empty($body->interests))
+    if (!$body || !isset($body->interests))
       return $app->status(400)->sendJson(['error' => 'Missing required values']);
     (new UserDataService)->updateInterests($app->getCtx('user')->id, ['interests' => $body->interests, 'removed' => $body->removed]);
     $app->sendJson(['message' => 'Successfully updated interests']);
