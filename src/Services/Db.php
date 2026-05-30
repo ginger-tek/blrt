@@ -29,6 +29,6 @@ class Db
 
   public function getLastInsertId(): int
   {
-    return $this->pdo->lastInsertId();
+    return $this->pdo->lastInsertId() ?: 0;
   }
 }
