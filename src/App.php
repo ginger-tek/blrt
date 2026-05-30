@@ -19,15 +19,18 @@ try {
     
     $app->post('/logout', AuthController::submitLogout(...));
     $app->get('/feed', ApiController::listFeed(...));
-    $app->get('/posts/:id', ApiController::getPost(...));
     $app->post('/posts', ApiController::submitCreatePost(...));
+    $app->get('/posts/:id', ApiController::getPost(...));
+    $app->get('/posts/:id/comments', ApiController::getPostComments(...));
+    $app->post('/posts/:id/comments', ApiController::submitPostComment(...));
+    $app->delete('/posts/:id', ApiController::deletePost(...));
     $app->post('/search', ApiController::submitSearch(...));
     $app->get('/profile', ApiController::getProfile(...));
     $app->get('/profile/interests', ApiController::getProfileInterests(...));
     $app->put('/profile/interests', ApiController::putProfileInterests(...));
     $app->get('/users/@:username', ApiController::getUserProfile(...));
 
-    $app->fallback(fn() => $app->sendJson(['message' => 'Route not found']));
+    $app->fallback(fn() => $app->sendJson(['error' => 'Route not found']));
   });
 } catch (\Exception $ex) {
   error_log($ex->getMessage());
