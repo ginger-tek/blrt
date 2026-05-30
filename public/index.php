@@ -11,7 +11,7 @@ require '../src/App.php';
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Blrt</title>
   <link href="/assets/styles.css" rel="stylesheet">
-  <link href="/manifest.json" rel="manifest">
+  <link href="/manifest.json" rel="manifest" crossorigin="use-credentials">
 </head>
 
 <body>
