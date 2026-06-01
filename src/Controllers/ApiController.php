@@ -16,7 +16,8 @@ class ApiController
       return $app->status(400)->sendJson(['error' => 'Missing required values']);
     $app->sendJson((new PostDataService)->create([
       'author_id' => $app->getCtx('user')->id,
-      'body' => $body->body
+      'body' => $body->body,
+      'media' => $body->media ?? []
     ]));
   }
 
@@ -28,7 +29,7 @@ class ApiController
 
   public static function getPost(Routy $app)
   {
-    $post = (new PostDataService)->get($app->getParam('id'));
+    $post = (new PostDataService)->get($app->getParam('id'), $app->getCtx('user')->id);
     if (!$post)
       return $app->status(404)->sendJson(['error' => 'Post not found']);
     $app->sendJson($post);
@@ -36,10 +37,10 @@ class ApiController
 
   public static function getPostComments(Routy $app)
   {
-    $post = (new PostDataService)->get($app->getParam('id'));
+    $post = (new PostDataService)->get($app->getParam('id'), $app->getCtx('user')->id);
     if (!$post)
       return $app->status(404)->sendJson(['error' => 'Post not found']);
-    $app->sendJson((new PostDataService)->listComments($post->id));
+    $app->sendJson((new PostDataService)->listComments($post->id, $app->getCtx('user')->id));
   }
 
   public static function submitPostComment(Routy $app)
@@ -47,7 +48,7 @@ class ApiController
     $body = $app->getBody();
     if (!$body || !isset($body->body) || !is_string($body->body))
       return $app->status(400)->sendJson(['error' => 'Missing required values']);
-    $post = (new PostDataService)->get($app->getParam('id'));
+    $post = (new PostDataService)->get($app->getParam('id'), $app->getCtx('user')->id);
     if (!$post)
       return $app->status(404)->sendJson(['error' => 'Post not found']);
     $app->sendJson((new PostDataService)->createComment([
@@ -57,9 +58,20 @@ class ApiController
     ]));
   }
 
+  public static function submitPostLike(Routy $app)
+  {
+    $post = (new PostDataService)->get($app->getParam('id'), $app->getCtx('user')->id);
+    if (!$post)
+      return $app->status(404)->sendJson(['error' => 'Post not found']);
+    $app->status(201)->sendJson(['result' => (new PostDataService)->createLike([
+      'post_id' => $post->id,
+      'user_id' => $app->getCtx('user')->id,
+    ])]);
+  }
+
   public static function deletePost(Routy $app)
   {
-    $post = (new PostDataService)->get($app->getParam('id'));
+    $post = (new PostDataService)->get($app->getParam('id'), $app->getCtx('user')->id);
     if (!$post)
       return $app->status(404)->sendJson(['error' => 'Post not found']);
     if ($app->getCtx('user')->id != $post->author_id)
@@ -80,8 +92,12 @@ class ApiController
   public static function getProfile(Routy $app)
   {
     $user = $app->getCtx('user');
-    $user->posts = (new PostDataService)->profilePosts($user->id);
     $app->sendJson($user);
+  }
+
+  public static function getProfilePosts(Routy $app) {
+    $posts = (new PostDataService)->profilePosts($app->getCtx('user')->id, $app->getCtx('user')->id);
+    $app->sendJson($posts);
   }
 
   public static function getProfileInterests(Routy $app)
@@ -103,7 +119,24 @@ class ApiController
     $user = (new UserDataService)->findDTO($app->getParam('username'));
     if (!$user)
       return $app->status(404)->sendJson(['User not found']);
-    $user->posts = (new PostDataService)->profilePosts($user->id);
     $app->sendJson($user);
+  }
+
+  public static function getUserProfilePosts(Routy $app)
+  {
+    $posts = (new PostDataService)->profilePosts($app->getParam('id'), $app->getCtx('user')->id);
+    $app->sendJson($posts);
+  }
+
+  public static function putProfile(Routy $app)
+  {
+    $body = $app->getBody();
+    if (!$body || !isset($body->display_name))
+      return $app->status(400)->sendJson(['error' => 'Missing required values']);
+    $app->sendJson((new UserDataService)->updateProfile($app->getCtx('user')->id, [
+      'display_name' => $body->display_name,
+      'bio' => $body->bio ?? null,
+      'pfp' => $body->pfp ?? null
+    ]));
   }
 }

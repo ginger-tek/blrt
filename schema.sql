@@ -57,7 +57,7 @@ from users;
 drop view if exists v_posts;
 create view v_posts
 as
-select p.id,
+select distinct p.id,
   p.body,
   p.media,
   p.created_at,
@@ -77,22 +77,22 @@ group by p.id;
 drop view if exists v_post_comments;
 create view v_post_comments
 as
-select pc.id,
-  pc.post_id,
-  pc.reply_to_id,
-  pc.body,
-  pc.created_at,
-  pc.author_id,
+select distinct c.id,
+  c.post_id,
+  c.reply_to_id,
+  c.body,
+  c.created_at,
+  c.author_id,
   a.username as author_username,
   a.display_name as author_name,
   a.pfp as author_pfp,
   count(l.id) as like_count,
   count(rc.id) as comment_count,
-  pc.is_deleted
-from post_comments pc
-join users a on a.id = pc.author_id
-left join likes l on l.rec_type = 2 and l.rec_id = pc.id
-left join post_comments rc on rc.reply_to_id = pc.id
-group by pc.id;
+  c.is_deleted
+from post_comments c
+join users a on a.id = c.author_id
+left join likes l on l.rec_type = 2 and l.rec_id = c.id
+left join post_comments rc on rc.reply_to_id = c.id
+group by c.id;
 
 create index if not exists posts_body_idx on posts(body);

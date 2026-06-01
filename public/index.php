@@ -10,6 +10,7 @@ require '../src/App.php';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Blrt</title>
+  <link href="https://unpkg.com/bootstrap-icons/font/bootstrap-icons.min.css" rel="stylesheet">
   <link href="/assets/styles.css" rel="stylesheet">
   <link href="/manifest.json" rel="manifest" crossorigin="use-credentials">
 </head>

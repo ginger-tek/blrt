@@ -1,6 +1,5 @@
 const state = Vue.reactive({
-  session: {},
-  toasts: []
+  session: {}
 })
 const api = async (u, m = 'GET', b = null, s = null) => {
   const r = await fetch(`/api/${u}`, {
@@ -12,27 +11,65 @@ const api = async (u, m = 'GET', b = null, s = null) => {
   const d = await r.json()
   return r.ok ? d : Promise.reject({ code: r.status, ...d })
 }
+const shrinkImage = async (file, max = 512, quality = .8) => {
+  return new Promise((res, rej) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+        if (width > height && width > max) {
+          height *= max / width;
+          width = max
+        } else if (height > max) {
+          width *= max / height
+          height = max
+        }
+        canvas.width = width
+        canvas.height = height
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+        res(canvas.toDataURL(file.type, quality))
+      }
+      img.onerror = rej
+      img.src = e.target.result
+    }
+    reader.onerror = rej
+    reader.readAsDataURL(file)
+  })
+}
+const convertImagesToDataURIs = async (files, opts = {}) => {
+  return Promise.all([...files].map(f => shrinkImage(f, opts?.max)))
+}
+const Toasts = {
+  _toasts: Vue.ref([]),
+  list() { return this._toasts.value },
+  append(message, opts = {}) {
+    const id = Date.now()
+    this._toasts.value.push({ id, message, ...opts })
+    if (!opts.stay && !opts.variant?.match(/danger|warn/))
+      setTimeout(() => this.dismiss(id), opts.dismissAfter || 5000)
+    return id
+  },
+  dismiss(id) {
+    this._toasts.value = this._toasts.value.filter(t => t.id != id)
+  },
+  clear() {
+    this._toasts.value = []
+  }
+}
 
 const Toaster = {
-  template: `<div class="toaster">
-    <article v-for="t in state.toasts" :class="['toast', t.variant || '']" :key="t.id">
-      <div class="message" v-html="t.message"></div>
-      <span aria-label="Close" @click="dismiss(t.id)">&cross;</span>
-    </article>
-  </div>`,
-  setup() {
-    function dismiss(id) {
-      state.toasts = state.toasts.filter(t => t.id != id)
-    }
-
-    return { state, dismiss }
+  props: {
+    state: Object
   },
-  append: (message, opts = {}) => {
-    const id = Date.now()
-    state.toasts.push({ id, message, ...opts })
-    if (!opts.stay && !opts.variant.match(/danger|warning/))
-      setTimeout(() => state.toasts = state.toasts.filter(t => t.id != id), opts.dismissAfter || 3000)
-  }
+  template: `<div class="toaster">
+    <article v-for="t in state.list()" :class="['toast', t.variant || '']" :key="t.id">
+      <div class="message" v-html="t.message"></div>
+      <span aria-label="Close" @click="state.dismiss(t.id)">&cross;</span>
+    </article>
+  </div>`
 }
 
 const Modal = {
@@ -79,13 +116,13 @@ const PostComments = {
     <div v-show="showReplyForm" class="bottom-spacing">
       <form @submit.prevent="submitReply" ref="replyFormRef">
         <textarea class="fill bottom-spacing-sm" name="body" placeholder="Enter to reply..." required></textarea>
-        <button type="submit" class="fill" :disabled="submitting">Submit Reply</button>
+        <button type="submit" class="fill" :disabled="submitting || undefined">Submit Reply</button>
       </form>
     </div>
     <div v-if="!loading && !comments.length" class="text-center">No comments</div>
     <article v-for="com in comments" class="list-item" :key="com.id">
       <small class="meta">
-        <img v-if="com.author_pfp" class="pfp" :src="com.author_pfp">
+        <img v-if="com.author_pfp" class="pfp sm" :src="com.author_pfp">
         <router-link :to="'/@' + com.author_username">{{ com.author_name }} <small>(@{{ com.author_username }})</small></router-link> &nbsp;&middot;&nbsp; {{ new Date(com.created_at * 1000).toLocaleString() }}
       </small>
       <pre class="body">{{ com.body }}</pre>
@@ -103,7 +140,7 @@ const PostComments = {
         comments.value = await api(`posts/${props.postId}/comments`)
       } catch (ex) {
         console.error(ex)
-        Toaster.append(ex.error, { variant: 'danger' })
+        Toasts.append(ex.error || ex, { variant: 'danger' })
       } finally {
         loading.value = false
       }
@@ -119,7 +156,7 @@ const PostComments = {
         emit('submitted', reply)
       } catch (ex) {
         console.error(ex)
-        Toaster.append(ex.error, { variant: 'danger' })
+        Toasts.append(ex.error || ex, { variant: 'danger' })
       } finally {
         submitting.value = false
       }
@@ -141,50 +178,70 @@ const PostDetails = {
     showDelete: Boolean,
     isListItem: Boolean
   },
-  template: `<div v-if="data.id" class="post">
+  template: `<div v-if="post.id" class="post">
     <small class="meta">
-      <img v-if="data.author_pfp" class="pfp" :src="data.author_pfp">
-      <router-link :to="'/@' + data.author_username">{{ data.author_name }} <small>(@{{ data.author_username }})</small></router-link> &nbsp;&middot;&nbsp; {{ new Date(data.created_at * 1000).toLocaleString() }}
+      <img v-if="post.author_pfp" class="pfp sm" :src="post.author_pfp">
+      <router-link :to="'/@' + post.author_username">{{ post.author_name }} <small>(@{{ post.author_username }})</small></router-link> &nbsp;&middot;&nbsp; {{ new Date(post.created_at * 1000).toLocaleString() }}
     </small>
+    <div v-if="post.media" class="media carousel bottom-spacing-sm" :style="{cursor:allowLink ? 'pointer' : 'unset'}" @click="allowLink ? $router.push('/posts/' + post.id) : null">
+      <img class="media-item" v-for="m in post.media.split('|')" :key="m" :src="m">
+    </div>
     <div class="bottom-spacing">
-      <pre :class="['body', isListItem ? 'sm' : null]">{{ data.body }}</pre>
-      <router-link v-if="allowLink" class="stretch" :to="'/posts/' + data.id"></router-link>
+      <pre :class="['body', isListItem ? 'sm' : null]">{{ post.body }}</pre>
+      <router-link v-if="allowLink" class="stretch" :to="'/posts/' + post.id"></router-link>
     </div>
     <div :class="['flex stretch', isListItem ? 'btns-sm' : null]">
-      <button v-if="showComments" type="button" @click="isReplying = !isReplying">{{ !isReplying ? 'Reply' : 'Cancel' }}</button>
-      <button type="button">Like</button>
+      <button v-if="showComments" type="button" @click="isReplying = !isReplying">{{ !isReplying ? 'Reply (' + post.comment_count + ')' : 'Cancel' }}</button>
+      <router-link v-else :to="'/posts/' + post.id" role="button">Comments ({{ post.comment_count }})</router-link>
+      <button type="button" @click="submitLike" :disabled="submitting || post.liked">Like ({{ post.like_count }})</button>
       <button type="button">Share</button>
-      <button v-if="showDelete && state.session.sub == data.author_id" class="danger" type="button" @click="deleteConfirmRef.open()">Delete</button>
+      <button v-if="showDelete && state.session.sub == post.author_id" class="danger" type="button" @click="deleteConfirmRef.open()">Delete</button>
     </div>
-    <post-comments v-if="showComments" :show-reply-form="isReplying" @submitted="isReplying = false" :post-id="data.id"></post-comments>
+    <post-comments v-if="showComments" :show-reply-form="isReplying" @submitted="isReplying = false; post.comment_count++" :post-id="post.id"></post-comments>
     <modal v-if="showDelete" ref="deleteConfirmRef" hide-close>
       <template #title>Delete Post</template>
       <p class="bottom-spacing">Are your sure you want to delete this post?</p>
       <div class="flex stretch">
         <button type="button" @click="deleteConfirmRef.close()">No, Cancel</button>
-        <button class="danger" :disabled="deleting" type="button" @click="deletePost">Yes, Delete</button>
+        <button class="danger" :disabled="deleting || undefined" type="button" @click="deletePost">Yes, Delete</button>
       </div>
     </modal>
   </div>`,
   setup(props) {
     const isReplying = Vue.ref(false)
     const router = VueRouter.useRouter()
+    const submitting = Vue.ref(false)
     const deleting = Vue.ref(false)
     const deleteConfirmRef = Vue.ref(null)
+    const post = Vue.ref(props.data)
 
     async function deletePost() {
       try {
         deleting.value = true
-        await api(`posts/${props.data.id}`, 'DELETE')
+        await api(`posts/${post.value.id}`, 'DELETE')
         router.back()
       } catch (ex) {
         console.error(ex)
+        Toasts.append(ex.error || ex, { variant: 'danger' })
         deleting.value = false
-        alert(ex.error)
       }
     }
 
-    return { state, isReplying, deleting, deleteConfirmRef, deletePost }
+    async function submitLike() {
+      try {
+        submitting.value = true
+        await api(`posts/${post.value.id}/like`, 'POST')
+        post.value.liked = true
+        post.value.like_count++
+      } catch (ex) {
+        console.error(ex)
+        Toasts.append(ex.error || ex, { variant: 'danger' })
+      } finally {
+        submitting.value = false
+      }
+    }
+
+    return { state, post, isReplying, submitting, deleting, deleteConfirmRef, submitLike, deletePost }
   }
 }
 
@@ -195,7 +252,7 @@ const SignupView = {
     <input class="fill bottom-spacing-sm" v-model="body.username" autocapitalize="off" placeholder="Username" required>
     <input class="fill bottom-spacing-sm" v-model="body.display_name" placeholder="Display Name" required>
     <input class="fill bottom-spacing-sm" v-model="body.password" type="password" placeholder="Password" required>
-    <button class="fill" type="submit" :disabled="submitting">Signup</button>
+    <button class="fill" type="submit" :disabled="submitting || undefined">Signup</button>
   </form>`,
   setup() {
     const submitting = Vue.ref(false)
@@ -212,7 +269,7 @@ const SignupView = {
         router.replace('/login')
       } catch (ex) {
         console.error(ex)
-        Toaster.append(ex.error, { variant: 'danger' })
+        Toasts.append(ex.error || ex, { variant: 'danger' })
         submitting.value = false
       }
     }
@@ -227,7 +284,7 @@ const LoginView = {
     <div :class="{squiggle:submitting}"></div>
     <input class="fill bottom-spacing-sm" v-model="body.username" autocapitalize="off" placeholder="Username" required>
     <input class="fill bottom-spacing-sm" v-model="body.password" type="password" placeholder="Password" required>
-    <button class="fill" type="submit" :disabled="submitting">Login</button>
+    <button class="fill" type="submit" :disabled="submitting || undefined">Login</button>
   </form>`,
   setup() {
     const submitting = Vue.ref(false)
@@ -238,6 +295,7 @@ const LoginView = {
 
     async function submitLogin() {
       try {
+        Toasts.clear()
         submitting.value = true
         const res = await api('login', 'POST', body)
         if (res.token) {
@@ -247,7 +305,7 @@ const LoginView = {
         }
       } catch (ex) {
         console.error(ex)
-        Toaster.append(ex.error, { variant: 'danger' })
+        Toasts.append(ex.error || ex, { variant: 'danger' })
         submitting.value = false
       }
     }
@@ -278,7 +336,7 @@ const FeedView = {
         posts.value = items
       } catch (ex) {
         console.error(ex)
-        Toaster.append(ex.error, { variant: 'danger' })
+        Toasts.append(ex.error || ex, { variant: 'danger' })
       } finally {
         loading.value = false
       }
@@ -332,8 +390,9 @@ const SearchView = {
       <hr v-if="results.users.length > 0 && results.posts.length > 0">
       <div v-if="results.users.length > 0">
         <h5>Users</h5>
-        <article v-for="user in results.users" class="list-item">
-          <img v-if="user.pfp" :src="user.pfp"> {{ user.display_name }} <small>(@{{ user.username }})</small>
+        <article v-for="user in results.users" class="list-item flex">
+          <img v-if="user.pfp" class="pfp sm" :src="user.pfp">
+          <div>{{ user.display_name }} <small>(@{{ user.username }})</small></div>
           <router-link :to="'/@' + user.username" class="stretch"></router-link>
         </article>
       </div>
@@ -359,6 +418,7 @@ const SearchView = {
       abortCtrl = new AbortController()
       debounce = setTimeout(async () => {
         try {
+          Toasts.clear()
           results.value = {}
           querying.value = true
           results.value = await api('search', 'POST', { query }, abortCtrl.signal)
@@ -368,7 +428,7 @@ const SearchView = {
             console.log('Previous request was cancelled');
           } else {
             console.error(ex)
-            Toaster.append(ex.error, { variant: 'danger' })
+            Toasts.append(ex.error || ex, { variant: 'danger' })
           }
         } finally {
           querying.value = false
@@ -390,18 +450,30 @@ const SearchView = {
 
 const CreateView = {
   template: `<form @submit.prevent="submitCreate">
-    <div :class="{squiggle:submitting}"></div>
+    <div :class="{squiggle:submitting||processing}"></div>
     <textarea class="fill bottom-spacing-sm" v-model="post.body" placeholder="What's on your mind?" required></textarea>
-    <button class="fill" type="submit" :disabled="submitting">Submit</button>
+    <div class="media grid bottom-spacing" v-if="post.media.length">
+      <img class="media-item" v-for="(m,x) in post.media" :key="m" :src="m" @click="post.media.splice(x,1)">
+    </div>
+    <div class="flex stretch">
+      <label role="button" :disabled="processing || undefined">
+        <input type="file" @change="processMedia" style="display:none" accept=".jpg,.jpeg,.png,.gif,.webp" multiple>
+        Choose Media
+      </label>
+      <button type="submit" :disabled="submitting || processing || undefined">Submit</button>
+    </div>
   </form>`,
   setup() {
     const submitting = Vue.ref(false)
+    const processing = Vue.ref(false)
     const post = Vue.reactive({
-      body: ''
+      body: '',
+      media: []
     })
 
     async function submitCreate() {
       try {
+        Toasts.clear()
         if (!post.body) return
         submitting.value = true
         const res = await api('posts', 'POST', post)
@@ -409,12 +481,30 @@ const CreateView = {
           router.replace(`/posts/${res.id}`)
       } catch (ex) {
         console.error(ex)
-        Toaster.append(ex.error, { variant: 'danger' })
+        Toasts.append(ex.error || ex, { variant: 'danger' })
         submitting.value = false
       }
     }
 
-    return { submitting, post, submitCreate }
+    async function processMedia(ev) {
+      try {
+        Toasts.clear()
+        processing.value = true
+        let files = [...ev.target.files]
+        if (files.length > 10) {
+          files = files.slice(0, 10)
+          Toasts.append('Only the first 10 images will be used', { variant: 'info' })
+        }
+        post.media = await convertImagesToDataURIs(files)
+      } catch (ex) {
+        console.error(ex)
+        Toasts.append(ex.error || ex, { variant: 'danger' })
+      } finally {
+        processing.value = false
+      }
+    }
+
+    return { post, submitting, processing, submitCreate, processMedia }
   }
 }
 
@@ -422,24 +512,26 @@ const ProfileView = {
   components: { PostDetails },
   template: `<div :class="{squiggle:loading}"></div>
   <div v-if="user.id">
-    <img class="pfp" v-if="user.pfp" :src="user.pfp"/>
-    <h2>{{ user.display_name }}</h2>
-    <div class="bottom-spacing">
-      <small><a :href="'/@' + user.username">@{{ user.username }}</a> &nbsp;&middot;&nbsp; Joined {{ new Date(user.created_at * 1000).toLocaleDateString() }}</small>
+    <div class="flex bottom-spacing">
+      <img class="pfp md" :src="user.pfp"/>
+      <div>
+        <h2>{{ user.display_name }}</h2>
+        <small><a :href="'/@' + user.username">@{{ user.username }}</a> &nbsp;&middot;&nbsp; Joined {{ new Date(user.created_at * 1000).toLocaleDateString() }}</small>
+      </div>
     </div>
     <pre>{{ user.bio || "Hi, I'm new here!" }}</pre>
-    <hr>
-    <template v-if="posts.length">
-    <h4>Posts</h4>
-    <div class="flex stretch bottom-spacing">
-      <button type="button" @click="posts = user.posts.top">Top</button>
-      <button type="button" @click="posts = user.posts.recent">Recent</button>
-    </div>
-    <article v-for="post in posts" class="list-item">
-      <post-details :data="post" :allow-link="true" :is-list-item="true"></post-details>
-    </article>
+    <template v-if="posts[tab]?.length">
+      <hr>
+      <h4>Posts</h4>
+      <div class="flex stretch bottom-spacing">
+        <button type="button" @click="tab ='top'" :disabled="tab == 'top'">Top</button>
+        <button type="button" @click="tab = 'recent'" :disabled="tab == 'recent'">Recent</button>
+      </div>
+      <article v-for="post in posts[tab]" :key="post.id" class="list-item">
+        <post-details :data="post" :allow-link="true" :is-list-item="true"></post-details>
+      </article>
     </template>
-    <div v-else class="text-center">
+    <div v-else-if="!loading" class="text-center">
       <h5>No posts</h5>
     </div>
   </div>`,
@@ -447,30 +539,53 @@ const ProfileView = {
     const loading = Vue.ref(true)
     const route = VueRouter.useRoute()
     const user = Vue.ref({})
-    const posts = Vue.ref([])
+    const tab = Vue.ref('top')
+    const posts = Vue.ref({})
+
+    async function loadProfile() {
+      if (route.params.username)
+        user.value = await api(`users/@${route.params.username}`)
+      else
+        user.value = await api(`profile`)
+    }
+
+    async function loadProfilePosts() {
+      posts.value = await api(`users/${user.value.id}/posts`)
+    }
 
     Vue.onMounted(async () => {
       try {
-        if (route.params.username)
-          user.value = await api(`users/@${route.params.username}`)
-        else
-          user.value = await api(`profile`)
-        posts.value = user.value.posts.top
+        await loadProfile()
+        await loadProfilePosts()
       } catch (ex) {
         console.error(ex)
-        Toaster.append(ex.error, { variant: 'danger' })
+        Toasts.append(ex.error || ex, { variant: 'danger' })
       } finally {
         loading.value = false
       }
     })
 
-    return { loading, user, posts }
+    return { loading, user, posts, tab }
   }
 }
 
 const SettingsView = {
   components: { Modal },
   template: `<div :class="{squiggle:loading||submitting}"></div>
+  <h3>Profile</h3>
+  <form @submit.prevent="saveProfile">
+    <div class="flex bottom-spacing-sm">
+      <img class="pfp" :src="profile.pfp">
+      <label role="button" style="width:fit-content">
+        <input type="file" @change="processPfp" style="display:none">
+        Choose Profile Photo
+      </label>
+    </div>
+    <input v-model="profile.display_name" placeholder="Display Name" class="fill" required>
+    <textarea v-model="profile.bio" placeholder="Bio" class="bottom-spacing-sm fill"></textarea>
+    <button type="submit" class="fill" :disabled="submitting">Save Profile</button>
+  </form>
+  <hr>
   <h3>Interests</h3>
   <form @submit.prevent="addInterest" class="flex">
     <input name="interest" class="fill" placeholder="Enter keyword(s) or username" required>
@@ -485,10 +600,10 @@ const SettingsView = {
       <button @click="removeInterest(v)" aria-label="Remove" title="Remove">&cross;</button>
     </div>
   </div>
-  <button type="button" @click="submitInterests" :disabled="submitting" class="fill">Save Interests</button>
+  <button type="button" @click="submitInterests" :disabled="submitting || undefined" class="fill">Save Interests</button>
   <hr>
   <h3>Account</h3>
-  <button type="button" @click="submitLogout" :disabled="submitting" class="fill">Logout</button>
+  <button type="button" @click="submitLogout" :disabled="submitting || undefined" class="fill">Logout</button>
   <article class="danger top-spacing">
     <h4>Danger Zone!</h4>
     <p>Actions done in this area are irreversable. Take caution!</p>
@@ -497,7 +612,7 @@ const SettingsView = {
   <modal ref="deleteConfirmRef">
     <template #title>Confirm Account Deletion</template>
     <p class="bottom-spacing">Are you sure you want to permanently delete your account?</p>
-    <button type="button" @click="submitDelete" :disabled="submitting" class="fill danger">Yes, Delete My Account</button>
+    <button type="button" @click="submitDelete" :disabled="submitting || undefined" class="fill danger">Yes, Delete My Account</button>
   </modal>`,
   setup() {
     const loading = Vue.ref(true)
@@ -505,11 +620,14 @@ const SettingsView = {
     const interests = Vue.ref([])
     const removedInterests = Vue.ref([])
     const deleteConfirmRef = Vue.ref(null)
+    const profile = Vue.ref({ display_name: state.session.name, bio: null, pfp: null })
+
+    async function loadProfile() {
+      profile.value = await api('profile')
+    }
 
     async function loadInterests() {
-      loading.value = true
       interests.value = await api('profile/interests')
-      loading.value = false
     }
 
     function addInterest(e) {
@@ -529,9 +647,10 @@ const SettingsView = {
           interests: interests.value,
           removed: removedInterests.value
         })
+        Toasts.append('Interests saved!', { variant: 'success' })
       } catch (ex) {
         console.error(ex)
-        Toaster.append(ex.error, { variant: 'danger' })
+        Toasts.append(ex.error || ex, { variant: 'danger' })
       } finally {
         submitting.value = false
       }
@@ -545,7 +664,7 @@ const SettingsView = {
         router.replace('/login')
       } catch (ex) {
         console.error(ex)
-        Toaster.append(ex.error, { variant: 'danger' })
+        Toasts.append(ex.error || ex, { variant: 'danger' })
         submitting.value = false
       }
     }
@@ -555,9 +674,36 @@ const SettingsView = {
       deleteConfirmRef.value.close()
     }
 
-    Vue.onBeforeMount(loadInterests)
+    async function saveProfile() {
+      try {
+        submitting.value = true
+        profile.value = await api('profile', 'PUT', profile.value)
+        Toasts.append('Profile saved!', { variant: 'success' })
+      } catch (ex) {
+        console.error(ex)
+        Toasts.append(ex.error || ex, { variant: 'danger' })
+      } finally {
+        submitting.value = false
+      }
+    }
 
-    return { loading, submitting, state, interests, addInterest, removeInterest, submitInterests, submitLogout, submitDelete, deleteConfirmRef }
+    async function processPfp(ev) {
+      try {
+        const [pfp] = await convertImagesToDataURIs([ev.target.files[0]], { max: 128 })
+        profile.value.pfp = pfp
+      } catch (ex) {
+        console.error(ex)
+        Toasts.append(ex.error || ex, { variant: 'danger' })
+      }
+    }
+
+    Vue.onBeforeMount(async () => {
+      loading.value = true
+      await Promise.allSettled([loadInterests(), loadProfile()])
+      loading.value = false
+    })
+
+    return { loading, submitting, state, profile, interests, addInterest, removeInterest, submitInterests, submitLogout, submitDelete, deleteConfirmRef, processPfp, saveProfile }
   }
 }
 
@@ -591,6 +737,7 @@ if (hasCookie?.value)
   state.session = await api('session').catch(() => ({}))
 
 router.beforeEach((to) => {
+  Toasts.clear()
   if (!state.session.sub && to.meta.auth)
     return '/login'
 })
@@ -599,11 +746,11 @@ Vue.createApp({
   components: { Toaster },
   template: `<header>
     <nav v-if="state.session.sub" class="flex spread">
-      <router-link to="/feed">Feed</router-link>
-      <router-link to="/search">Search</router-link>
-      <router-link to="/create">Create</router-link>
-      <router-link to="/profile">Profile</router-link>
-      <router-link to="/settings">Settings</router-link>
+      <router-link to="/feed"><i class="bi bi-house-fill"></i> <span>Feed</span></router-link>
+      <router-link to="/search"><i class="bi bi-search"></i> <span>Search</span></router-link>
+      <router-link to="/create"><i class="bi bi-plus-circle-fill"></i> <span>Create</span></router-link>
+      <router-link to="/profile"><i class="bi bi-person-circle"></i> <span>Profile</span></router-link>
+      <router-link to="/settings"><i class="bi bi-gear-fill"></i> <span>Settings</span></router-link>
     </nav>
     <nav v-else class="flex center">
       <router-link to="/login">Login</router-link>
@@ -612,10 +759,10 @@ Vue.createApp({
   </header>
   <main>
     <router-view></router-view>
-    <toaster></toaster>
+    <toaster :state="Toasts"></toaster>
   </main>`,
   setup() {
-    return { state }
+    return { state, Toasts }
   }
 })
   .use(router)

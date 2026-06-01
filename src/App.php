@@ -21,14 +21,18 @@ try {
     $app->get('/feed', ApiController::listFeed(...));
     $app->post('/posts', ApiController::submitCreatePost(...));
     $app->get('/posts/:id', ApiController::getPost(...));
+    $app->post('/posts/:id/like', ApiController::submitPostLike(...));
     $app->get('/posts/:id/comments', ApiController::getPostComments(...));
     $app->post('/posts/:id/comments', ApiController::submitPostComment(...));
     $app->delete('/posts/:id', ApiController::deletePost(...));
     $app->post('/search', ApiController::submitSearch(...));
     $app->get('/profile', ApiController::getProfile(...));
+    $app->put('/profile', ApiController::putProfile(...));
+    $app->get('/profile/posts', ApiController::getProfilePosts(...));
     $app->get('/profile/interests', ApiController::getProfileInterests(...));
     $app->put('/profile/interests', ApiController::putProfileInterests(...));
     $app->get('/users/@:username', ApiController::getUserProfile(...));
+    $app->get('/users/:id/posts', ApiController::getUserProfilePosts(...));
 
     $app->fallback(fn() => $app->sendJson(['error' => 'Route not found']));
   });

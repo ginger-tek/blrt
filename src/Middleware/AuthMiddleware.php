@@ -25,8 +25,12 @@ class AuthMiddleware
     if (!self::identify($app))
       return $app->status(401)->sendJson(['error' => 'Unauthorized']);
     $user = (new UserDataService)->getDTO($app->getCtx('session')->sub);
-    if (!$user)
+    if (!$user) {
+      $past = time() - 60;
+      setcookie('exp', '', ['expires' => $past, 'path' => '/', 'httpOnly' => false]);
+      setcookie('token', '', ['expires' => $past, 'path' => '/', 'httpOnly' => true]);
       return $app->status(401)->sendJson(['error' => 'Unauthorized']);
+    }
     $app->setCtx('user', $user);
   }
 }
