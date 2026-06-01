@@ -18,18 +18,12 @@ const shrinkImage = async (file, max = 512, quality = .8) => {
       const img = new Image()
       img.onload = () => {
         const canvas = document.createElement('canvas')
-        let width = img.width
-        let height = img.height
-        if (width > height && width > max) {
-          height *= max / width;
-          width = max
-        } else if (height > max) {
-          width *= max / height
-          height = max
-        }
-        canvas.width = width
-        canvas.height = height
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+        const min = Math.min(img.naturalWidth, img.naturalHeight)
+        const offsetX = (img.naturalWidth - min) / 2
+        const offsetY = (img.naturalHeight - min) / 2
+        canvas.width = max
+        canvas.height = max
+        canvas.getContext('2d').drawImage(img, offsetX, offsetY, min, min, 0, 0, max, max)
         res(canvas.toDataURL(file.type, quality))
       }
       img.onerror = rej
@@ -496,6 +490,7 @@ const CreateView = {
           Toasts.append('Only the first 10 images will be used', { variant: 'info' })
         }
         post.media = await convertImagesToDataURIs(files)
+        ev.target.value = ''
       } catch (ex) {
         console.error(ex)
         Toasts.append(ex.error || ex, { variant: 'danger' })
@@ -691,6 +686,7 @@ const SettingsView = {
       try {
         const [pfp] = await convertImagesToDataURIs([ev.target.files[0]], { max: 128 })
         profile.value.pfp = pfp
+        ev.target.value = ''
       } catch (ex) {
         console.error(ex)
         Toasts.append(ex.error || ex, { variant: 'danger' })
