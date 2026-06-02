@@ -134,6 +134,9 @@ class PostDataService
 
   public function deletePost(string $id, string $user_id): bool
   {
-    return $this->db->run("delete from posts where id = ? and author_id = ? limit 1", [$id, $user_id])->rowCount() == 1;
+    return $this->db->run("update posts set
+    is_deleted = 1, body = '[deleted]', media = null
+    where id = ? and author_id = ?
+    limit 1", [$id, $user_id])->rowCount() == 1;
   }
 }
