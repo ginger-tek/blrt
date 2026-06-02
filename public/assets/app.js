@@ -243,7 +243,7 @@ const SignupView = {
   template: `<h1 class="text-center">Signup</h1>
   <form @submit.prevent="submitSignup" class="container narrow">
     <div :class="{squiggle:submitting}"></div>
-    <input class="fill bottom-spacing-sm" v-model="body.username" autocapitalize="off" placeholder="Username" required>
+    <input class="fill bottom-spacing-sm" v-model="body.username" autocapitalize="off" placeholder="Username" autofocus required>
     <input class="fill bottom-spacing-sm" v-model="body.display_name" placeholder="Display Name" required>
     <input class="fill bottom-spacing-sm" v-model="body.password" type="password" placeholder="Password" required>
     <button class="fill" type="submit" :disabled="submitting || undefined">Signup</button>
@@ -276,7 +276,7 @@ const LoginView = {
   template: `<h1 class="text-center">Login</h1>
   <form @submit.prevent="submitLogin" class="container narrow">
     <div :class="{squiggle:submitting}"></div>
-    <input class="fill bottom-spacing-sm" v-model="body.username" autocapitalize="off" placeholder="Username" required>
+    <input class="fill bottom-spacing-sm" v-model="body.username" autocapitalize="off" placeholder="Username" autofocus required>
     <input class="fill bottom-spacing-sm" v-model="body.password" type="password" placeholder="Password" required>
     <button class="fill" type="submit" :disabled="submitting || undefined">Login</button>
   </form>`,
