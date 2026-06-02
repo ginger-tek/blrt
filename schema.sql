@@ -72,6 +72,7 @@ from posts p
 join users a on a.id = p.author_id
 left join likes l on l.rec_type = 1 and l.rec_id = p.id
 left join post_comments pc on pc.post_id = p.id
+where p.is_deleted = 0
 group by p.id;
 
 drop view if exists v_post_comments;
@@ -93,6 +94,7 @@ from post_comments c
 join users a on a.id = c.author_id
 left join likes l on l.rec_type = 2 and l.rec_id = c.id
 left join post_comments rc on rc.reply_to_id = c.id
+where c.is_deleted = 0
 group by c.id;
 
 create index if not exists posts_body_idx on posts(body);
