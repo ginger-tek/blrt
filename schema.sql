@@ -23,7 +23,7 @@ create table if not exists posts(
   id text primary key,
   author_id text not null,
   body text not null,
-  media text not null,
+  media blob,
   is_deleted integer default 0,
   created_at integer default (unixepoch()),
   updated_at integer default (unixepoch())
