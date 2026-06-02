@@ -335,6 +335,7 @@ hr {
   padding: .45em .5em;
   font-family: inherit;
   font-size: inherit;
+  line-height: 1em;
   border-radius: .5em;
 
   &.inline {
@@ -699,6 +700,13 @@ input[type=search]::-webkit-search-cancel-button {
     &:has(>.media-item:nth-child(5))>.media-item {
       width: 130px;
     }
+
+    &.picker>.media-item>button.danger {
+      position: absolute;
+      margin-top: .5em;
+      right: .25em;
+      padding: .5em;
+    }
   }
 
   &.carousel {
@@ -724,11 +732,13 @@ input[type=search]::-webkit-search-cancel-button {
   >.media-item {
     aspect-ratio: 1/1;
     display: block;
-    object-fit: cover;
+    background: var(--src, var(--btn-bg));
+    background-position: center;
+    background-size: contain;
     overflow: hidden;
     border-radius: 10px;
-    background: var(--btn-bg);
     border: 2px solid var(--btn-shadow);
+    position: relative;
   }
 }
 
