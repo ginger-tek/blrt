@@ -268,6 +268,8 @@ const SignupView = {
       }
     }
 
+    Vue.watch(() => body.username, () => body.display_name = body.username)
+
     return { submitting, body, submitSignup }
   }
 }
