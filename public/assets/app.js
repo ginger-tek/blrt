@@ -446,8 +446,10 @@ const CreateView = {
   template: `<form @submit.prevent="submitCreate">
     <div :class="{squiggle:submitting||processing}"></div>
     <textarea class="fill bottom-spacing-sm" v-model="post.body" placeholder="What's on your mind?" required></textarea>
-    <div class="media grid bottom-spacing" v-if="post.media.length">
-      <img class="media-item" v-for="(m,x) in post.media" :key="m" :src="m" @click="post.media.splice(x,1)">
+    <div class="media grid picker bottom-spacing" v-if="post.media.length">
+      <div class="media-item" v-for="(m,x) in post.media" :key="m" :style="'--src:url('+m+')'">
+        <button class="danger" @click="post.media.splice(x,1)">&cross;</button>
+      </div>
     </div>
     <div class="flex stretch">
       <label role="button" :disabled="processing || undefined">
