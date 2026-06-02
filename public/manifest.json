@@ -4,8 +4,8 @@
   "description": "Just say what you need to say",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#131720",
-  "theme_color": "#5f3a5f",
+  "background_color": "#201320",
+  "theme_color": "#e2d0e2",
   "icons": [
     {
       "src": "https://unpkg.com/bootstrap-icons@1.13.1/icons/chat-quote-fill.svg",
