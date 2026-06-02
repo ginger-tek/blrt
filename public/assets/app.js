@@ -315,9 +315,7 @@ const FeedView = {
   template: `<div :class="{squiggle:loading}"></div>
     <div v-if="!loading && posts.length == 0" class="text-center">
       <h2>No posts</h2>
-      <p>Looks like there's nothing here yet.<br>Post something new, or you can try updating your interest settings</p>
-      <router-link role="button" class="inline" to="/create">Create</router-link>&nbsp;
-      <router-link role="button" class="inline" to="/settings">Settings</router-link>
+      <p>Looks like there's nothing here yet.<br>Post something new, or set your interest settings</p>
     </div>
     <article v-for="post in posts" class="list-item">
       <post-details :data="post" :allow-link="true" :is-list-item="true"></post-details>
